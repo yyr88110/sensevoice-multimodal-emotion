@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-多模态情绪融合分析 v2.0
+多模态情绪融合分析 v3.0 — Whisper + SenseVoice 双引擎
 
 架构：
-  声学通道 (SenseVoice)     文本通道 (LLM语义)
+  Whisper (ASR)              SenseVoice (情绪)
        ↓                         ↓
-  CTC logits → 5类概率      转写文本 → 细粒度情绪
+  精准转写文本                CTC logits → 5类概率
        ↓                         ↓
        └─────── 融合层 ──────────┘
                  ↓
          最终情绪判断 + 融合理由
 
 用法：
-  python3 multimodal_emotion.py <audio_file> [--json] [--no-llm]
+  python3 sensevoice_analyze.py <audio_file> [--json]
 
 输出：
   声学概率分布 + 文本语义分析 + 融合决策 + agent hint
@@ -62,6 +62,28 @@ def get_model():
         )
     return _model
 
+
+
+
+# ============================================================
+# Whisper ASR 引擎
+# ============================================================
+_whisper_model = None
+
+def get_whisper_model():
+    """Lazy load Whisper model (singleton)"""
+    global _whisper_model
+    if _whisper_model is None:
+        import whisper
+        _whisper_model = whisper.load_model("small")
+    return _whisper_model
+
+
+def whisper_transcribe(audio_path: str) -> str:
+    """用 Whisper 做精准 ASR 转写"""
+    model = get_whisper_model()
+    result = model.transcribe(audio_path, language="zh")
+    return result["text"].strip()
 
 def convert_audio(input_path: str) -> str:
     """Convert to 16kHz mono wav"""
@@ -177,20 +199,20 @@ def extract_acoustic_emotion(audio_path: str) -> dict:
     results = model.generate(
         input=audio_path, language="auto", use_itn=True, batch_size_s=60
     )
-    raw_text = results[0].get("text", "") if results else ""
-    text = re.sub(r"<\|[^|]+\|>", "", raw_text).strip()
+    raw_sv_text = results[0].get("text", "") if results else ""
+    sv_text = re.sub(r"<\|[^|]+\|>", "", raw_sv_text).strip()
 
     # 从raw_tags提取原始声学标签
-    raw_emotion_match = re.search(r"<\|(HAPPY|SAD|ANGRY|NEUTRAL)\|>", raw_text)
+    raw_emotion_match = re.search(r"<\|(HAPPY|SAD|ANGRY|NEUTRAL)\|>", raw_sv_text)
     raw_emotion = raw_emotion_match.group(1) if raw_emotion_match else "NEUTRAL"
 
     return {
-        "text": text,
+        "sv_text": sv_text,
         "raw_emotion": raw_emotion,
         "best_emotion": best_emotion,
         "best_prob": best_prob,
         "probs": prob_dict,
-        "raw_tags": raw_text,
+        "raw_tags": raw_sv_text,
     }
 
 
@@ -496,28 +518,29 @@ def analyze(audio_path: str, use_llm: bool = False) -> dict:
     """
     完整的多模态情绪分析流程。
     
-    Args:
-        audio_path: 音频文件路径
-        use_llm: 是否使用 LLM 做文本分析（需要外部调用）
-    
-    Returns:
-        完整分析结果
+    双引擎架构：
+    - Whisper: 精准 ASR 转写
+    - SenseVoice: 声学情绪概率提取
     """
     wav_path = None
     try:
         # 1. 转换音频格式
         wav_path = convert_audio(audio_path)
 
-        # 2. 声学通道：提取情绪概率分布
+        # 2. 声学通道：SenseVoice 提取情绪概率分布
         acoustic = extract_acoustic_emotion(wav_path)
 
-        # 3. 文本通道：语义情绪分析
-        textual = analyze_text_emotion(acoustic["text"])
+        # 3. ASR 转写：Whisper 精准转写
+        whisper_text = whisper_transcribe(audio_path)
+        acoustic["text"] = whisper_text  # 用 Whisper 的转写替代 SenseVoice 的
 
-        # 4. 融合
+        # 4. 文本通道：用 Whisper 转写做语义情绪分析
+        textual = analyze_text_emotion(whisper_text)
+
+        # 5. 融合
         fusion = fuse_emotion(acoustic, textual)
 
-        # 5. 生成 agent hint
+        # 6. 生成 agent hint
         hint = build_agent_hint(acoustic, textual, fusion)
 
         return {
@@ -527,9 +550,13 @@ def analyze(audio_path: str, use_llm: bool = False) -> dict:
                 "best_prob": acoustic["best_prob"],
                 "probs": acoustic["probs"],
             },
+            "asr": {
+                "whisper": whisper_text,
+                "sensevoice": acoustic.get("sv_text", ""),
+            },
             "textual": textual,
             "fusion": fusion,
-            "text": acoustic["text"],
+            "text": whisper_text,
             "agent_hint": hint,
         }
 
