@@ -32,12 +32,18 @@
 5. **文本neutral+声学有情绪** → 倾向声学（文字平淡但语气明显）
 6. **真正冲突** → 看语用意图（试探→中性，反问→文本优先）
 
-## 安装
+## 快速开始
 
 ```bash
-pip install funasr torch torchaudio
+# 安装依赖
+pip install -r requirements.txt
+
+# 克隆仓库
 git clone https://github.com/yyr88110/sensevoice-multimodal-emotion.git
 cd sensevoice-multimodal-emotion
+
+# 运行分析
+python sensevoice_analyze.py your_audio.ogg
 ```
 
 ## 使用
@@ -60,6 +66,16 @@ python sensevoice_analyze.py test.ogg --json
 | `text` | ASR 转写文本 |
 | `agent_hint` | 给 AI agent 的上下文提示 |
 
+## 示例输出
+
+查看 `examples/` 目录下的完整示例：
+
+| 文件 | 场景 | 融合结果 |
+|---|---|---|
+| `probing_tone.json` | "那你觉得我现在说话是什么情绪呢？" | 试探(75%) |
+| `frustrated_tone.json` | "哎，不是我这还要这么假装笑吗？" | 无奈(62%) |
+| `satisfied_tone.json` | "不错不错，这个逻辑还是很合理的" | 满意(72%) |
+
 ## 测试结果
 
 | 语音 | 声学概率 | 文本意图 | 融合结果 |
@@ -69,11 +85,32 @@ python sensevoice_analyze.py test.ogg --json
 | "那你觉得我现在说话是什么情绪呢？" | neutral 58.9% | 试探 | 试探(75%) |
 | "不错不错，这个逻辑还是很合理的" | neutral 99.3% | 陈述 | 满意(72%) |
 
+## 技术细节
+
+### 情绪 Token ID
+SenseVoice 使用 CTC 解码，情绪 token 位于序列位置2：
+- 25001: happy
+- 25002: sad
+- 25003: angry
+- 25004: neutral
+- 25009: unk (unknown)
+
+### 概率提取
+从 CTC logits 的位置2提取上述5个 token 的 log 概率，再通过 softmax 得到归一化概率分布。
+
 ## 已知限制
 
 - ASR 转写精度有限（SenseVoice 主要优化情绪识别，ASR 是附带能力）
 - 5类情绪粒度较粗（后续可通过微调扩展到20-30类）
 - 文本分析基于规则（后续可用 LLM 替代）
+
+## 后续规划
+
+1. **Whisper ASR 集成**：用 Whisper 替代 SenseVoice 做转写，提高文字准确率
+2. **LLM 文本分析**：用 LLM 替代规则做更精确的语义分析
+3. **情绪类别扩展**：通过微调扩展到20-30类
+4. **流式处理**：支持实时语音流输入
+5. **多语言支持**：扩展到英语、粤语等
 
 ## License
 
