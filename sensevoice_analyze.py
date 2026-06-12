@@ -25,7 +25,14 @@ import re
 import subprocess
 import tempfile
 import time
+import logging
 from typing import Optional
+
+# Redirect funasr logging to stderr to keep stdout clean for JSON output
+logging.getLogger().setLevel(logging.WARNING)
+for handler in logging.getLogger().handlers:
+    if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
+        handler.stream = sys.stderr
 
 # ============================================================
 # SenseVoice 情绪 token 映射
@@ -54,12 +61,16 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        from funasr import AutoModel
-        _model = AutoModel(
-            model="iic/SenseVoiceSmall",
-            device="cpu",
-            disable_update=True,
-        )
+        try:
+            from funasr import AutoModel
+            _model = AutoModel(
+                model="iic/SenseVoiceSmall",
+                device="cpu",
+                disable_update=True,
+            )
+        except Exception as e:
+            print(f"Error loading SenseVoice model: {e}", file=sys.stderr)
+            raise
     return _model
 
 
@@ -74,16 +85,24 @@ def get_whisper_model():
     """Lazy load Whisper model (singleton)"""
     global _whisper_model
     if _whisper_model is None:
-        import whisper
-        _whisper_model = whisper.load_model("small")
+        try:
+            import whisper
+            _whisper_model = whisper.load_model("small")
+        except Exception as e:
+            print(f"Error loading Whisper model: {e}", file=sys.stderr)
+            raise
     return _whisper_model
 
 
 def whisper_transcribe(audio_path: str) -> str:
     """用 Whisper 做精准 ASR 转写"""
-    model = get_whisper_model()
-    result = model.transcribe(audio_path, language="zh")
-    return result["text"].strip()
+    try:
+        model = get_whisper_model()
+        result = model.transcribe(audio_path, language="zh")
+        return result["text"].strip()
+    except Exception as e:
+        print(f"Whisper transcription failed: {e}", file=sys.stderr)
+        return ""
 
 def convert_audio(input_path: str) -> str:
     """Convert to 16kHz mono wav"""
