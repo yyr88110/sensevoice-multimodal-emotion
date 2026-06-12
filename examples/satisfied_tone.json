@@ -1,0 +1,38 @@
+{
+  "acoustic": {
+    "raw_emotion": "NEUTRAL",
+    "best_emotion": "neutral",
+    "best_prob": 0.993,
+    "probs": {
+      "happy": {"prob": 0.003, "prob_pct": "0.3%", "label_zh": "开心"},
+      "sad": {"prob": 0.000, "prob_pct": "0.0%", "label_zh": "难过"},
+      "angry": {"prob": 0.000, "prob_pct": "0.0%", "label_zh": "生气"},
+      "neutral": {"prob": 0.993, "prob_pct": "99.3%", "label_zh": "平静"},
+      "unk": {"prob": 0.003, "prob_pct": "0.3%", "label_zh": "未知"}
+    }
+  },
+  "textual": {
+    "semantic_emotion": "happy",
+    "semantic_emotion_zh": "开心",
+    "confidence": 0.9,
+    "probs": {"happy": 0.9, "sad": 0.0, "angry": 0.0, "neutral": 0.1},
+    "intent": "陈述",
+    "signals": [
+      "情绪词'不错'→开心+0.3",
+      "语气词'吧'→中性+0.05",
+      "元认知词'装'→表面开心+0.15（可能掩盖真实情绪）"
+    ]
+  },
+  "fusion": {
+    "final_emotion": "happy",
+    "final_emotion_zh": "满意",
+    "confidence": 0.72,
+    "conflict": false,
+    "fusion_reason": ["声学=平静但文本明确=happy(90%)，倾向文本"],
+    "acoustic_vote": "neutral",
+    "textual_vote": "happy",
+    "intent": "陈述"
+  },
+  "text": "不错不错，这个逻辑还是很合理的那你就把这个上线吧",
+  "agent_hint": "[语音情绪融合分析] | 最终判断=满意(置信72%) | 语用意图=陈述 | 声学分布=[开心:0.3% | 难过:0.0% | 生气:0.0% | 平静:99.3% | 未知:0.3%] | 文本语义=开心(90%) | 文本信号=情绪词'不错'→开心+0.3, 语气词'吧'→中性+0.05, 元认知词'装'→表面开心+0.15（可能掩盖真实情绪） | 转写=\"不错不错，这个逻辑还是很合理的那你就把这个上线吧\""
+}
