@@ -1,0 +1,42 @@
+{
+  "acoustic": {
+    "raw_emotion": "SAD",
+    "best_emotion": "sad",
+    "best_prob": 0.708,
+    "probs": {
+      "happy": {"prob": 0.106, "prob_pct": "10.6%", "label_zh": "开心"},
+      "sad": {"prob": 0.708, "prob_pct": "70.8%", "label_zh": "难过"},
+      "angry": {"prob": 0.001, "prob_pct": "0.1%", "label_zh": "生气"},
+      "neutral": {"prob": 0.060, "prob_pct": "6.0%", "label_zh": "平静"},
+      "unk": {"prob": 0.125, "prob_pct": "12.5%", "label_zh": "未知"}
+    }
+  },
+  "textual": {
+    "semantic_emotion": "sad",
+    "semantic_emotion_zh": "难过",
+    "confidence": 0.48,
+    "probs": {"happy": 0.25, "sad": 0.479, "angry": 0.271, "neutral": 0.0},
+    "intent": "反问",
+    "signals": [
+      "情绪词'哎'→难过+0.3",
+      "语用'反问/反驳'(匹配'不是.*吗')+0.2",
+      "语用'无奈质问'(匹配'还要.*[？?]')+0.15",
+      "问号×1→增加不确定性",
+      "多重否定(×2)→无奈+0.25",
+      "元认知词'假装'→表面开心+0.15（可能掩盖真实情绪）",
+      "元认知词'装'→表面开心+0.15（可能掩盖真实情绪）"
+    ]
+  },
+  "fusion": {
+    "final_emotion": "sad",
+    "final_emotion_zh": "无奈",
+    "confidence": 0.62,
+    "conflict": false,
+    "fusion_reason": ["声学(sad)与文本(sad)一致，置信度叠加"],
+    "acoustic_vote": "sad",
+    "textual_vote": "sad",
+    "intent": "反问"
+  },
+  "text": "哎，不是我这还要这么假装笑吗？",
+  "agent_hint": "[语音情绪融合分析] | 最终判断=无奈(置信62%) | 语用意图=反问 | 声学分布=[开心:10.6% | 难过:70.8% | 生气:0.1% | 平静:6.0% | 未知:12.5%] | 文本语义=难过(48%) | 文本信号=情绪词'哎'→难过+0.3, 语用'反问/反驳'(匹配'不是.*吗')+0.2, 语用'无奈质问'(匹配'还要.*[？?]')+0.15 | 转写=\"哎，不是我这还要这么假装笑吗？\""
+}
