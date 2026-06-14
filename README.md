@@ -122,6 +122,53 @@ SenseVoice 使用 CTC 解码，情绪 token 位于序列位置2：
 - **Whisper ASR** 更准但没有情绪识别
 - **双引擎各取所长**：Whisper 管转写，SenseVoice 管情绪
 
+## 说话人基线校准 (v4.0)
+
+### 问题
+通用情绪模型对所有人用同一把尺子。但每个人的"中性基线"不同——有人天生声音轻柔，有人天生语速快。用绝对值判断情绪会产生大量误判。
+
+### 解决方案
+```
+声学特征 → 说话人基线校准 → Z-score 偏差 → 情绪判断
+```
+
+```bash
+# 建基线（从多条"正常状态"音频，推荐 5-10 条）
+python -m sensevoice_emotion.speaker_baseline build \
+  --speaker shiwei --audio file1.ogg file2.ogg file3.ogg
+
+# 校准新音频（输出 Z-score 偏差）
+python -m sensevoice_emotion.speaker_baseline calibrate \
+  --speaker shiwei --audio new_file.ogg
+
+# 查看基线
+python -m sensevoice_emotion.speaker_baseline show --speaker shiwei
+```
+
+### 提取的特征（11维）
+| 特征 | 含义 | 情绪关联 |
+|------|------|----------|
+| rms_mean | 平均音量 | 激动/生气→偏高，低落→偏低 |
+| rms_std | 音量波动 | 情绪起伏大→偏高 |
+| f0_mean | 平均基频 | 紧张/兴奋→偏高，低落→偏低 |
+| f0_std | 基频波动 | 语调变化大→偏高 |
+| f0_range | 基频极差 | 同上 |
+| syllables_per_sec | 语速 | 紧张/兴奋→偏快 |
+| pause_count | 停顿次数 | 犹豫/思考→偏多 |
+| pause_mean_dur | 平均停顿时长 | 沉思/低落→偏长 |
+
+### 校准输出示例
+```json
+{
+  "top_deviations": ["rms_mean high(+7.6σ)", "pause_mean_dur low(-6.9σ)"],
+  "features": {
+    "rms_mean": {"raw": 0.044, "baseline_mean": 0.018, "z_score": 7.56},
+    "f0_mean": {"raw": 111.77, "baseline_mean": 112.48, "z_score": -0.06}
+  }
+}
+```
+|Z| > 1.5 值得关注。
+
 ## 已知限制
 
 - Whisper small 模型在 CPU 上较慢（~30秒/条语音）
