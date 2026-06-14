@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 5. Extreme deviations (>2σ) can override acoustic/text channels
 6. Non-extreme deviations boost confidence when aligned with other channels
 
+- **Offline Emotion Analyzer v2.0** (`emotion_analyzer.py`): text + voice dual-channel emotion trend analysis
+  - Text channel: keyword-based sentiment scoring (existing)
+  - Voice channel: SenseVoice + speaker baseline calibration for audio messages
+  - Dual-channel fusion: voice weight 0.6 + text weight 0.4 when both available
+  - Trend tracking: consecutive low-score detection, emotion trend analysis
+  - Alert system: cooldown-aware emotion alerts for proactive care
+
 ### Use Case
 Solves the "soft-spoken speaker" problem: a person who naturally speaks softly won't be
 misclassified as "sad" -- the system compares against *their own* baseline, not universal averages.
