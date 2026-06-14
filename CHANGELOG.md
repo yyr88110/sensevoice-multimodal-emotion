@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `build` / `calibrate` / `show` / `extract` commands
 - New dependency: `librosa>=0.10` for acoustic feature extraction
 
+### Changed
+- **Three-channel fusion**: `fuse_emotion()` now accepts optional `baseline` parameter for speaker-calibrated emotion detection
+- **`analyze()`**: new `speaker` parameter — pass speaker ID to enable baseline calibration
+- **CLI**: new `--speaker <id>` flag — `python sensevoice_analyze.py audio.ogg --speaker shiwei`
+- **`build_agent_hint()`**: includes baseline deviation info when available
+- **Human-readable output**: shows baseline channel details (Z-scores, top deviations)
+
+### How It Works
+1. Extract 11-dim acoustic features from the audio
+2. Compute Z-score against speaker's personal baseline
+3. Map deviations to emotion direction (arousal, anger, sadness, excitement)
+4. Inject as 3rd voting channel in fusion layer
+5. Extreme deviations (>2σ) can override acoustic/text channels
+6. Non-extreme deviations boost confidence when aligned with other channels
+
 ### Use Case
 Solves the "soft-spoken speaker" problem: a person who naturally speaks softly won't be
 misclassified as "sad" -- the system compares against *their own* baseline, not universal averages.
